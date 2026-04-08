@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比賽錦標賽</title>
+
+<!-- PWA Meta -->
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+  text-align: center;
+  margin:0;
+  padding:0;
+}
+input { padding: 8px; margin: 5px; }
+button { padding: 8px 12px; margin: 5px; cursor: pointer; }
+.match, .bye-node {
+  border: 1px solid #444; margin: 10px auto; padding: 10px;
+  width: 320px; border-radius: 5px; position: relative; transition: all 0.5s ease;
+}
+.winner { color: #22c55e; font-weight: bold; }
+.bye-node { background: #222; color: gold; font-weight: bold; }
+.advancing { animation: advance 1s ease; }
+@keyframes advance {
+  0% { transform: translateY(-20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+#history { margin-top: 30px; border-top: 1px solid #444; padding-top: 10px; max-width: 400px; margin-left:auto;margin-right:auto;text-align:left;}
+.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<h1 id="title">🏆 錦標賽</h1>
+
+<div id="config">
+  <h2>設置比賽</h2>
+  <input id="compName" placeholder="比賽名稱"><br>
+  <label>參賽人數:</label>
+  <input id="numPlayers" type="number" value="6"><br>
+  <label>比賽勝利次數:</label>
+  <input id="winsNeeded" type="number" value="2"><br>
+  <button onclick="setupPlayers()">下一步</button>
+</div>
+
+<div id="playerSetup"></div>
+
+<div id="byeScreen" class="hidden">
+  <h2>⚖️ 玩家人數為單數 - 選擇輪空玩家</h2>
+  <div id="byeOptions"></div>
+  <button onclick="randomBye()">🎲 隨機選擇</button>
+</div>
+
+<div id="bracket"></div>
+<div id="history"><h3>比賽歷史</h3><ul id="historyList"></ul></div>
+
+<script>
+let config = {};
+let currentPlayers = [];
+let currentWinners = [];
+let byePlayer = null;
+
+// 洗牌函數
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// 設置玩家
+function setupPlayers() {
+  config.name = document.getElementById("compName").value || "錦標賽";
+  config.num = parseInt(document.getElementById("numPlayers").value);
+  config.wins = parseInt(document.getElementById("winsNeeded").value);
+
+  document.getElementById("title").innerText = "🏆 " + config.name;
+  document.getElementById("config").style.display = "none";
+
+  let div = document.getElementById("playerSetup");
+  div.innerHTML = "<h2>輸入玩家名稱</h2>";
+
+  for (let i = 0; i < config.num; i++) {
+    div.innerHTML += `<input id="p${i}" placeholder="玩家 ${i+1}"><br>`;
+  }
+
+  div.innerHTML += `<button onclick="startTournament()">開始比賽</button>`;
+}
+
+// 開始比賽
+function startTournament() {
+  currentPlayers = [];
+  for (let i = 0; i < config.num; i++) {
+    let name = document.getElementById(`p${i}`).value.trim();
+    if (!name) return alert("請填寫所有玩家名稱");
+    currentPlayers.push(name);
+  }
+
+  document.getElementById("playerSetup").style.display = "none";
+  nextRoundSetup();
+}
+
+// 下一輪設定
+function nextRoundSetup() {
+  if (currentPlayers.length % 2 === 1) {
+    showByeScreen();
+  } else {
+    createRound(currentPlayers, "本輪比賽");
+  }
+}
+
+// 單數玩家輪空
+function showByeScreen() {
+  document.getElementById("byeScreen").classList.remove("hidden");
+  document.getElementById("bracket").innerHTML = "";
+
+  const div = document.getElementById("byeOptions");
+  div.innerHTML = "<p>選擇一位玩家直接晉級:</p>";
+
+  currentPlayers.forEach(player => {
+    div.innerHTML += `<button onclick="selectBye('${player}')">${player}</button>`;
+  });
+}
+
+function selectBye(player) { applyBye(player); }
+function randomBye() {
+  const player = currentPlayers[Math.floor(Math.random() * currentPlayers.length)];
+  applyBye(player);
+}
+function applyBye(player) {
+  byePlayer = player;
+  document.getElementById("byeScreen").classList.add("hidden");
+
+  addHistory(`${player} 輪空直接晉級 ⚡`);
+
+  currentWinners = [player];
+  currentPlayers = currentPlayers.filter(p => p !== player);
+
+  createRound(currentPlayers, "本輪比賽（含輪空）");
+}
+
+function createRound(players, title) {
+  const bracket = document.getElementById("bracket");
+
+  let byeText = "";
+  if (byePlayer) {
+    byeText = `<div class="bye-node advancing">⚡ ${byePlayer} 輪空直接晉級！</div>`;
+    byePlayer = null;
+  }
+
+  bracket.innerHTML = `<h2>${title}</h2>` + byeText;
+  currentWinners = currentWinners || [];
+
+  let remaining = [...players];
+  shuffle(remaining);
+  while (remaining.length > 0) {
+    const p1 = remaining.pop();
+    const p2 = remaining.pop();
+    if (!p2) break;
+
+    const div = document.createElement("div");
+    div.className = "match";
+
+    div.innerHTML = `
+      <p>${p1} vs ${p2}</p>
+      <p>比分: <span id="a${p1+p2}">0</span> - <span id="b${p1+p2}">0</span></p>
+      <button onclick="addWin('${p1}', '${p1+p2}', 'A', this)">${p1} +1</button>
+      <button onclick="addWin('${p2}', '${p1+p2}', 'B', this)">${p2} +1</button>
+    `;
+
+    bracket.appendChild(div);
+  }
+}
+
+function addWin(player, id, side, btn) {
+  let a = document.getElementById(`a${id}`);
+  let b = document.getElementById(`b${id}`);
+
+  let scoreA = parseInt(a.innerText);
+  let scoreB = parseInt(b.innerText);
+
+  if (side === "A") scoreA++;
+  else scoreB++;
+
+  a.innerText = scoreA;
+  b.innerText = scoreB;
+
+  if (scoreA === config.wins || scoreB === config.wins) {
+    const winner = (scoreA === config.wins) ? player : btn.parentElement.querySelectorAll("button")[1].innerText.replace(" +1","");
+    btn.parentElement.classList.add("advancing");
+    setTimeout(() => {
+      btn.parentElement.innerHTML = `<p class="winner">勝利者: ${winner}</p>`;
+      addHistory(`${winner} 獲勝 ⚡`);
+      currentWinners.push(winner);
+      checkRoundEnd();
+    }, 500);
+  }
+}
+
+function checkRoundEnd() {
+  const matches = document.querySelectorAll(".match").length;
+  const done = document.querySelectorAll(".winner").length;
+
+  if (matches === done) {
+    currentPlayers = currentWinners;
+    currentWinners = [];
+
+    if (currentPlayers.length === 1) {
+      addHistory(`🏆 冠軍: ${currentPlayers[0]} 🎉`);
+      document.getElementById("bracket").innerHTML = `<h2>🏆 冠軍: ${currentPlayers[0]}</h2>`;
+      return;
+    }
+    nextRoundSetup();
+  }
+}
+
+function addHistory(text) {
+  const list = document.getElementById("historyList");
+  const li = document.createElement("li");
+  li.textContent = text;
+  list.appendChild(li);
+}
+
+// 註冊 Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => console.log('Service Worker Registered'));
+}
+</script>
+
+</body>
+</html>
