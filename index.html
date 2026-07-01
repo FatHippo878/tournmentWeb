@@ -12,28 +12,113 @@
 
 <style>
 body {
-  font-family: Arial;
+  font-family: Arial, "Microsoft JhengHei", sans-serif;
   background: #0f172a;
   color: white;
   text-align: center;
-  margin:0;
-  padding:0;
+  margin: 0;
+  padding: 0;
 }
-input { padding: 8px; margin: 5px; }
-button { padding: 8px 12px; margin: 5px; cursor: pointer; }
-.match, .bye-node {
-  border: 1px solid #444; margin: 10px auto; padding: 10px;
-  width: 320px; border-radius: 5px; position: relative; transition: all 0.5s ease;
+h1 { margin: 16px 0; }
+input, select { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: white; }
+button {
+  padding: 8px 12px; margin: 5px; cursor: pointer;
+  border-radius: 5px; border: 1px solid #475569; background: #334155; color: white;
 }
-.winner { color: #22c55e; font-weight: bold; }
-.bye-node { background: #222; color: gold; font-weight: bold; }
-.advancing { animation: advance 1s ease; }
-@keyframes advance {
-  0% { transform: translateY(-20px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+button:hover { background: #475569; }
+
+/* ---- setup ---- */
+#config, #playerSetup { max-width: 460px; margin: 0 auto; }
+.setup-note { color: #93c5fd; font-size: 14px; }
+
+/* ---- bye picker modal (always visible, ignores scroll) ---- */
+#byeScreen {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(2, 6, 23, 0.85);
+  padding: 16px; overflow: auto;
+  animation: fade 0.2s ease;
 }
-#history { margin-top: 30px; border-top: 1px solid #444; padding-top: 10px; max-width: 400px; margin-left:auto;margin-right:auto;text-align:left;}
-.hidden { display:none; }
+#byeScreen.hidden { display: none; }
+@keyframes fade { 0%{opacity:0} 100%{opacity:1} }
+.bye-card {
+  background: #1e293b; border: 1px solid #f59e0b;
+  border-radius: 12px; padding: 22px; max-width: 460px; width: 100%;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  animation: pop 0.25s ease;
+}
+.bye-card h2 { margin-top: 0; }
+.bye-opt { min-width: 110px; }
+
+/* ---- top bar during play ---- */
+#topbar { display: none; margin: 10px; }
+
+/* ---- champion banner ---- */
+.champ {
+  font-size: 26px; font-weight: bold; color: #0f172a;
+  background: linear-gradient(90deg,#fde047,#f59e0b);
+  padding: 18px; border-radius: 10px; margin: 16px auto; max-width: 520px;
+  animation: pop 0.6s ease;
+}
+@keyframes pop { 0%{transform:scale(0.7);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+/* ---- bracket graph ---- */
+.section { margin: 24px 0; }
+.section > h2 { color: #93c5fd; border-bottom: 1px solid #334155; display: inline-block; padding: 0 20px 6px; }
+.rounds {
+  display: flex; align-items: stretch;
+  overflow-x: auto; padding: 10px 4px; gap: 6px;
+}
+.round { display: flex; flex-direction: column; min-width: 220px; }
+.round-title { font-weight: bold; color: #64748b; margin-bottom: 8px; font-size: 13px; }
+.round-matches {
+  flex: 1; display: flex; flex-direction: column; justify-content: space-around;
+}
+
+.match {
+  border: 1px solid #334155; background: #1e293b;
+  border-radius: 6px; margin: 8px 16px; position: relative;
+  transition: all 0.4s ease; text-align: left; overflow: hidden;
+}
+.match.done { border-color: #22c55e55; }
+.match.bye-node { opacity: 0.7; border-style: dashed; }
+.match.live { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b55; }
+.match.new { animation: advance 0.6s ease; }
+@keyframes advance { 0%{transform:translateY(-14px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+
+.team {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 10px; border-bottom: 1px solid #334155; gap: 6px;
+}
+.team:last-child { border-bottom: none; }
+.team .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team .sc { min-width: 20px; text-align: center; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+.team.win .nm { color: #22c55e; font-weight: bold; }
+.team.win .sc { color: #22c55e; }
+.team.bye .sc { color: gold; font-weight: bold; }
+.team .plus {
+  padding: 2px 9px; margin: 0; font-size: 13px; line-height: 1.4;
+  background: #0f766e; border-color: #0f766e;
+}
+.team .plus:hover { background: #0d9488; }
+
+/* connector stubs between rounds */
+.round:not(:last-child) .match::after {
+  content: ""; position: absolute; top: 50%; right: -13px;
+  width: 13px; height: 2px; background: #334155;
+}
+.round:not(:first-child) .match::before {
+  content: ""; position: absolute; top: 50%; left: -13px;
+  width: 13px; height: 2px; background: #334155;
+}
+
+#history {
+  margin: 30px auto; border-top: 1px solid #334155; padding-top: 10px;
+  max-width: 420px; text-align: left;
+}
+#history ul { padding-left: 20px; }
+#history li { margin: 3px 0; color: #cbd5e1; }
+.hidden { display: none; }
 </style>
 </head>
 <body>
@@ -43,31 +128,47 @@ button { padding: 8px 12px; margin: 5px; cursor: pointer; }
 <div id="config">
   <h2>設置比賽</h2>
   <input id="compName" placeholder="比賽名稱"><br>
+  <label>賽制:</label>
+  <select id="tourType">
+    <option value="single">單淘汰賽 (Single Elimination)</option>
+    <option value="double">雙淘汰賽 (Double Elimination)</option>
+  </select><br>
   <label>參賽人數:</label>
-  <input id="numPlayers" type="number" value="6"><br>
-  <label>比賽勝利次數:</label>
-  <input id="winsNeeded" type="number" value="2"><br>
+  <input id="numPlayers" type="number" min="2" value="6"><br>
+  <label>每場勝利次數:</label>
+  <input id="winsNeeded" type="number" min="1" value="2"><br>
+  <label>輪空分配:</label>
+  <select id="byeMode">
+    <option value="auto">自動 (隨機)</option>
+    <option value="manual">手動選擇</option>
+  </select><br>
   <button onclick="setupPlayers()">下一步</button>
 </div>
 
 <div id="playerSetup"></div>
 
-<div id="byeScreen" class="hidden">
-  <h2>⚖️ 玩家人數為單數 - 選擇輪空玩家</h2>
-  <div id="byeOptions"></div>
-  <button onclick="randomBye()">🎲 隨機選擇</button>
+<div id="byeScreen" class="hidden"></div>
+
+<div id="topbar">
+  <button onclick="location.reload()">🔄 重新開始</button>
 </div>
 
+<div id="result"></div>
 <div id="bracket"></div>
 <div id="history"><h3>比賽歷史</h3><ul id="historyList"></ul></div>
 
 <script>
 let config = {};
-let currentPlayers = [];
-let currentWinners = [];
-let byePlayer = null;
+let M = {};              // id -> node (match or bye)
+let columns = [];        // ordered render columns: {bracket, title, nodes:[id]}
+let activeMatches = [];  // ids of matches currently awaiting results
+let eng = null;          // engine state
+let byePicker = null;    // {players, onConfirm} while a manual bye is being chosen
+let champion = null;
+let seq = 0;             // unique id counter
+let newIds = [];         // ids to animate on next render
 
-// 洗牌函數
+/* ---------- helpers ---------- */
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -75,151 +176,291 @@ function shuffle(array) {
   }
   return array;
 }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
 
-// 設置玩家
+/* ---------- setup flow ---------- */
 function setupPlayers() {
   config.name = document.getElementById("compName").value || "錦標賽";
-  config.num = parseInt(document.getElementById("numPlayers").value);
+  config.type = document.getElementById("tourType").value;
+  config.num  = parseInt(document.getElementById("numPlayers").value);
   config.wins = parseInt(document.getElementById("winsNeeded").value);
+  config.byeMode = document.getElementById("byeMode").value;
+
+  if (!config.num || config.num < 2) return alert("參賽人數至少 2 人");
+  if (!config.wins || config.wins < 1) return alert("每場勝利次數至少 1");
 
   document.getElementById("title").innerText = "🏆 " + config.name;
   document.getElementById("config").style.display = "none";
 
   let div = document.getElementById("playerSetup");
   div.innerHTML = "<h2>輸入玩家名稱</h2>";
-
   for (let i = 0; i < config.num; i++) {
-    div.innerHTML += `<input id="p${i}" placeholder="玩家 ${i+1}"><br>`;
+    div.innerHTML += `<input id="p${i}" placeholder="玩家 ${i + 1}"><br>`;
   }
-
+  const typeLabel = config.type === "double" ? "雙淘汰賽" : "單淘汰賽";
+  div.innerHTML += `<p class="setup-note">賽制：${typeLabel}</p>`;
+  const how = config.byeMode === "manual" ? "由你手動選擇" : "隨機選出";
+  div.innerHTML += `<p class="setup-note">當某一輪人數為單數時，將${how} 1 位輪空玩家。</p>`;
   div.innerHTML += `<button onclick="startTournament()">開始比賽</button>`;
 }
 
-// 開始比賽
 function startTournament() {
-  currentPlayers = [];
+  const names = [];
   for (let i = 0; i < config.num; i++) {
-    let name = document.getElementById(`p${i}`).value.trim();
+    const name = document.getElementById(`p${i}`).value.trim();
     if (!name) return alert("請填寫所有玩家名稱");
-    currentPlayers.push(name);
+    if (names.includes(name)) return alert("玩家名稱不可重複：" + name);
+    names.push(name);
   }
-
   document.getElementById("playerSetup").style.display = "none";
-  nextRoundSetup();
+  document.getElementById("topbar").style.display = "block";
+  initEngine(names);
 }
 
-// 下一輪設定
-function nextRoundSetup() {
-  if (currentPlayers.length % 2 === 1) {
-    showByeScreen();
+/* ---------- engine ---------- */
+function initEngine(players) {
+  M = {}; columns = []; activeMatches = []; champion = null; seq = 0; newIds = [];
+  eng = {
+    mode: config.type,   // 'single' | 'double'
+    phase: "W",          // 'W' winners / main, 'L' losers, 'GF' grand final, 'DONE'
+    wPlayers: [...players],
+    lPool: [],           // winners-bracket losers waiting for the losers bracket
+    lPlayers: [],        // current losers-bracket contestants
+    wChampion: null,
+    lChampion: null,
+    roundW: 0,
+    roundL: 0,
+    current: null        // {bracket, matchIds, byePlayer} for the round in progress
+  };
+  scheduleNext();
+}
+
+// Build one round from `players`, deciding a bye first if the count is odd.
+function beginRound(bracket, players, title) {
+  const odd = players.length % 2 === 1;
+  if (odd && config.byeMode === "manual") {
+    showByePicker(players, byePlayer => createRound(bracket, players, title, byePlayer));
   } else {
-    createRound(currentPlayers, "本輪比賽");
+    const byePlayer = odd ? players[Math.floor(Math.random() * players.length)] : null;
+    createRound(bracket, players, title, byePlayer);
   }
 }
 
-// 單數玩家輪空
-function showByeScreen() {
-  document.getElementById("byeScreen").classList.remove("hidden");
-  document.getElementById("bracket").innerHTML = "";
+function createRound(bracket, players, title, byePlayer) {
+  const col = { bracket, title, nodes: [] };
+  newIds = [];
 
-  const div = document.getElementById("byeOptions");
-  div.innerHTML = "<p>選擇一位玩家直接晉級:</p>";
-
-  currentPlayers.forEach(player => {
-    div.innerHTML += `<button onclick="selectBye('${player}')">${player}</button>`;
-  });
-}
-
-function selectBye(player) { applyBye(player); }
-function randomBye() {
-  const player = currentPlayers[Math.floor(Math.random() * currentPlayers.length)];
-  applyBye(player);
-}
-function applyBye(player) {
-  byePlayer = player;
-  document.getElementById("byeScreen").classList.add("hidden");
-
-  addHistory(`${player} 輪空直接晉級 ⚡`);
-
-  currentWinners = [player];
-  currentPlayers = currentPlayers.filter(p => p !== player);
-
-  createRound(currentPlayers, "本輪比賽（含輪空）");
-}
-
-function createRound(players, title) {
-  const bracket = document.getElementById("bracket");
-
-  let byeText = "";
   if (byePlayer) {
-    byeText = `<div class="bye-node advancing">⚡ ${byePlayer} 輪空直接晉級！</div>`;
-    byePlayer = null;
+    const bid = "bye" + (seq++);
+    M[bid] = { id: bid, bracket, isBye: true, player: byePlayer, done: true };
+    col.nodes.push(bid);
+    newIds.push(bid);
+    addHistory(`${byePlayer} 輪空晉級 ⚡`);
   }
 
-  bracket.innerHTML = `<h2>${title}</h2>` + byeText;
-  currentWinners = currentWinners || [];
-
-  let remaining = [...players];
-  shuffle(remaining);
-  while (remaining.length > 0) {
-    const p1 = remaining.pop();
-    const p2 = remaining.pop();
-    if (!p2) break;
-
-    const div = document.createElement("div");
-    div.className = "match";
-
-    div.innerHTML = `
-      <p>${p1} vs ${p2}</p>
-      <p>比分: <span id="a${p1+p2}">0</span> - <span id="b${p1+p2}">0</span></p>
-      <button onclick="addWin('${p1}', '${p1+p2}', 'A', this)">${p1} +1</button>
-      <button onclick="addWin('${p2}', '${p1+p2}', 'B', this)">${p2} +1</button>
-    `;
-
-    bracket.appendChild(div);
+  const rest = shuffle(byePlayer ? players.filter(p => p !== byePlayer) : [...players]);
+  const matchIds = [];
+  for (let i = 0; i < rest.length; i += 2) {
+    const id = bracket + (seq++);
+    M[id] = { id, bracket, p1: rest[i], p2: rest[i + 1], s1: 0, s2: 0, winner: null, loser: null, done: false, isBye: false };
+    col.nodes.push(id);
+    matchIds.push(id);
+    newIds.push(id);
   }
+
+  columns.push(col);
+  activeMatches = matchIds;
+  eng.current = { bracket, matchIds, byePlayer };
+  render();
 }
 
-function addWin(player, id, side, btn) {
-  let a = document.getElementById(`a${id}`);
-  let b = document.getElementById(`b${id}`);
-
-  let scoreA = parseInt(a.innerText);
-  let scoreB = parseInt(b.innerText);
-
-  if (side === "A") scoreA++;
-  else scoreB++;
-
-  a.innerText = scoreA;
-  b.innerText = scoreB;
-
-  if (scoreA === config.wins || scoreB === config.wins) {
-    const winner = (scoreA === config.wins) ? player : btn.parentElement.querySelectorAll("button")[1].innerText.replace(" +1","");
-    btn.parentElement.classList.add("advancing");
-    setTimeout(() => {
-      btn.parentElement.innerHTML = `<p class="winner">勝利者: ${winner}</p>`;
-      addHistory(`${winner} 獲勝 ⚡`);
-      currentWinners.push(winner);
-      checkRoundEnd();
-    }, 500);
+// Decide what happens next once all active matches are finished.
+function scheduleNext() {
+  if (eng.mode !== "double") {
+    if (eng.wPlayers.length === 1) return crownChampion(eng.wPlayers[0]);
+    eng.roundW++;
+    return beginRound("W", eng.wPlayers, roundTitle("W", eng.roundW, eng.wPlayers.length));
   }
-}
 
-function checkRoundEnd() {
-  const matches = document.querySelectorAll(".match").length;
-  const done = document.querySelectorAll(".winner").length;
-
-  if (matches === done) {
-    currentPlayers = currentWinners;
-    currentWinners = [];
-
-    if (currentPlayers.length === 1) {
-      addHistory(`🏆 冠軍: ${currentPlayers[0]} 🎉`);
-      document.getElementById("bracket").innerHTML = `<h2>🏆 冠軍: ${currentPlayers[0]}</h2>`;
-      return;
+  if (eng.phase === "W") {
+    if (eng.wPlayers.length === 1) {
+      eng.wChampion = eng.wPlayers[0];
+      addHistory(`🏅 勝部冠軍：${eng.wChampion}`);
+      eng.lPlayers = eng.lPool.slice();
+      eng.phase = "L";
+      return scheduleNext();
     }
-    nextRoundSetup();
+    eng.roundW++;
+    return beginRound("W", eng.wPlayers, `勝部第 ${eng.roundW} 輪`);
   }
+
+  if (eng.phase === "L") {
+    if (eng.lPlayers.length <= 1) {
+      eng.lChampion = eng.lPlayers[0] || null;
+      if (eng.lChampion) addHistory(`🏅 敗部冠軍：${eng.lChampion}`);
+      eng.phase = "GF";
+      return startGrandFinal();
+    }
+    eng.roundL++;
+    return beginRound("L", eng.lPlayers, `敗部第 ${eng.roundL} 輪`);
+  }
+}
+
+function roundTitle(bracket, n, count) {
+  if (bracket === "W" && count === 2) return "總決賽";
+  return "第 " + n + " 輪";
+}
+
+function startGrandFinal() {
+  if (!eng.lChampion) return crownChampion(eng.wChampion);  // safety
+  const id = "GF";
+  M[id] = { id, bracket: "GF", p1: eng.wChampion, p2: eng.lChampion, s1: 0, s2: 0, winner: null, loser: null, done: false, isBye: false };
+  columns.push({ bracket: "GF", title: "總決賽", nodes: [id] });
+  newIds = [id];
+  activeMatches = [id];
+  eng.current = null;
+  render();
+}
+
+/* ---------- playing matches ---------- */
+function addWin(id, side) {
+  const mt = M[id];
+  if (!mt || mt.done || mt.isBye) return;
+  if (side === "p1") mt.s1++; else mt.s2++;
+
+  if (mt.s1 === config.wins || mt.s2 === config.wins) {
+    mt.winner = (mt.s1 === config.wins) ? mt.p1 : mt.p2;
+    mt.loser  = (mt.winner === mt.p1) ? mt.p2 : mt.p1;
+    mt.done = true;
+    addHistory(`${mt.winner} 擊敗 ${mt.loser} ⚡`);
+    onMatchDone(mt);
+  }
+  render();
+}
+
+function onMatchDone(mt) {
+  // Grand final has its own rules (possible reset game).
+  if (mt.bracket === "GF") {
+    if (mt.id === "GF") {
+      if (mt.winner === mt.p1) crownChampion(mt.winner);   // winners champion held on
+      else {
+        // losers champion won -> both have one loss -> decider game
+        const id = "GF2";
+        M[id] = { id, bracket: "GF", p1: mt.winner, p2: mt.loser, s1: 0, s2: 0, winner: null, loser: null, done: false, isBye: false };
+        columns.push({ bracket: "GF", title: "總決賽（第二場）", nodes: [id] });
+        newIds = [id];
+        activeMatches = [id];
+        addHistory("敗部冠軍扳平戰局，進行冠軍賽第二場！");
+      }
+    } else {
+      crownChampion(mt.winner);
+    }
+    return;
+  }
+
+  // Regular round: wait until every match in the round is finished.
+  if (!activeMatches.every(x => M[x].done)) return;
+
+  const { bracket, matchIds, byePlayer } = eng.current;
+  const advancers = byePlayer ? [byePlayer] : [];
+  const losers = [];
+  for (const mid of matchIds) { advancers.push(M[mid].winner); losers.push(M[mid].loser); }
+  eng.current = null;
+
+  if (bracket === "W") {
+    eng.wPlayers = advancers;
+    if (eng.mode === "double") eng.lPool.push(...losers);   // drop into losers bracket
+  } else if (bracket === "L") {
+    eng.lPlayers = advancers;                               // L losers are eliminated (2nd loss)
+  }
+  scheduleNext();
+}
+
+function crownChampion(name) {
+  if (champion) return;
+  champion = name;
+  eng.phase = "DONE";
+  activeMatches = [];
+  addHistory(`🏆 冠軍：${name} 🎉`);
+  document.getElementById("result").innerHTML = `<div class="champ">🏆 冠軍：${escapeHtml(name)} 🎉</div>`;
+}
+
+/* ---------- manual bye picker (always 1 player) ---------- */
+function showByePicker(players, onConfirm) {
+  byePicker = { players, onConfirm };
+  document.getElementById("byeScreen").classList.remove("hidden");
+  renderByePicker();
+}
+
+function renderByePicker() {
+  const opts = byePicker.players
+    .map((p, i) => `<button class="bye-opt" onclick="pickBye(${i})">${escapeHtml(p)}</button>`)
+    .join("");
+  document.getElementById("byeScreen").innerHTML =
+    `<div class="bye-card">
+       <h2>⚖️ 本輪人數為單數</h2>
+       <p class="setup-note">請選擇 1 位輪空玩家，該玩家本輪直接晉級下一輪。</p>
+       <div>${opts}</div><br>
+       <button onclick="randomByePick()">🎲 隨機選擇</button>
+     </div>`;
+}
+
+function pickBye(i) { finishBye(byePicker.players[i]); }
+function randomByePick() { finishBye(byePicker.players[Math.floor(Math.random() * byePicker.players.length)]); }
+function finishBye(name) {
+  const cb = byePicker.onConfirm;
+  byePicker = null;
+  document.getElementById("byeScreen").classList.add("hidden");
+  cb(name);
+}
+
+/* ---------- rendering ---------- */
+function teamHTML(n, side) {
+  const p = n[side];
+  const sc = side === "p1" ? n.s1 : n.s2;
+  const isWin = n.done && n.winner === p;
+  const plus = !n.done ? `<button class="plus" onclick="addWin('${n.id}','${side}')">+</button>` : "";
+  return `<div class="team ${isWin ? "win" : ""}">
+      <span class="nm">${escapeHtml(p)}</span>
+      <span class="sc">${sc}</span>${plus}
+    </div>`;
+}
+
+function nodeHTML(n) {
+  const anim = newIds.includes(n.id) ? " new" : "";
+  if (n.isBye) {
+    return `<div class="match bye-node${anim}">
+        <div class="team win bye"><span class="nm">${escapeHtml(n.player)}</span><span class="sc">輪空</span></div>
+      </div>`;
+  }
+  const state = n.done ? "done" : "live";
+  return `<div class="match ${state}${anim}">
+      ${teamHTML(n, "p1")}
+      ${teamHTML(n, "p2")}
+    </div>`;
+}
+
+function render() {
+  const groups = (config.type === "double")
+    ? [{ key: "W", title: "勝部 Winners" }, { key: "L", title: "敗部 Losers" }, { key: "GF", title: "總決賽 Grand Final" }]
+    : [{ key: "W", title: "淘汰賽" }];
+
+  let html = "";
+  for (const g of groups) {
+    const cols = columns.filter(c => c.bracket === g.key);
+    if (!cols.length) continue;
+    html += `<div class="section"><h2>${g.title}</h2><div class="rounds">`;
+    for (const col of cols) {
+      html += `<div class="round"><div class="round-title">${col.title}</div><div class="round-matches">`;
+      for (const id of col.nodes) html += nodeHTML(M[id]);
+      html += `</div></div>`;
+    }
+    html += `</div></div>`;
+  }
+  document.getElementById("bracket").innerHTML = html;
+  newIds = [];
 }
 
 function addHistory(text) {
@@ -231,7 +472,7 @@ function addHistory(text) {
 
 // 註冊 Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(() => console.log('Service Worker Registered'));
+  navigator.serviceWorker.register('sw.js').then(() => console.log('Service Worker Registered')).catch(() => {});
 }
 </script>
 
